@@ -1,4 +1,3 @@
-def a():
-    return 1,2
-d ,c = a()
-print(d,c)
+a = 48
+b = int(48*0.06)
+print(b)

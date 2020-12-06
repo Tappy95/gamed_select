@@ -211,12 +211,12 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
         print(platform_games_count)
         with open('./results/games_count.csv', 'w') as count_obj:
             writer_count = csv.writer(count_obj)
-            writer_count.writerow(["游戏", "平台", "总数"])
+            writer_count.writerow(["游戏", "平台", "总数", "充值数"])
             # 写入多行用writerows
             csv_list = []
             for key, count in all_games_count.items():
                 list1 = key.split('-')
-                csv_list.append([list1[1], list1[0], count])
+                csv_list.append([list1[1], list1[0], count, int(count*0.06)])
             csv_list = sorted(csv_list, key=lambda k: k[1],reverse=False)
             writer_count.writerows(csv_list)
         with open('./results/player_today.txt', 'w') as file_obj:
