@@ -216,7 +216,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
             csv_list = []
             for key, count in all_games_count.items():
                 list1 = key.split('-')
-                csv_list.append([list1[1], list1[0], count, int(count*0.06)])
+                csv_list.append([list1[1], list1[0], count, int(count*0.1)])
             csv_list = sorted(csv_list, key=lambda k: k[1],reverse=False)
             writer_count.writerows(csv_list)
         with open('./results/player_today.txt', 'w') as file_obj:
@@ -232,8 +232,13 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                          "游戏7", "平台7", "游戏8", "平台8", ])
                     # 写入多行用writerows
                     csv_list = []
-                    for p_info in results[i * people_count:(i + 1) * people_count]:
-                        csv_item = [p_info['people_id']]
+                    random.shuffle(results)
+                    for idx, p_info in enumerate(results[i * people_count:(i + 1) * people_count]):
+                        # csv_item = [p_info['people_id']]
+                        csv_item = [str(idx+1)]
+                        # print(p_info['task'])
+                        random.shuffle(p_info['task'])
+                        # print(p_info['task'])
                         for task in p_info['task']:
                             csv_item.append(task['name'])
                             csv_item.append(task['platform'])
