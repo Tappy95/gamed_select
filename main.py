@@ -191,7 +191,7 @@ def write_csv():
                 writer.writerows(results)
 
 
-def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, xw_p=25):
+def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, xw_p=25, recharge_p=0.06,recharge_count_every_people=15):
     with engine.connect() as conn:
         select_game_list = select([GameList])
         cur = conn.execute(select_game_list)
@@ -214,11 +214,14 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
             writer_count.writerow(["游戏", "平台", "总数", "充值数"])
             # 写入多行用writerows
             csv_list = []
+            recharge_dict = {}
             for key, count in all_games_count.items():
                 list1 = key.split('-')
-                csv_list.append([list1[1], list1[0], count, int(count*0.1)])
+                csv_list.append([list1[1], list1[0], count, int(count*recharge_p)])
+                recharge_dict[key] = int(count*recharge_p)
             csv_list = sorted(csv_list, key=lambda k: k[1],reverse=False)
             writer_count.writerows(csv_list)
+            print(recharge_dict)
         with open('./results/player_today.txt', 'w') as file_obj:
             for result in results:
                 # result = str(result).replace('name', '游戏名').replace('platform','平台').replace('recharge10_rebate', '充10返现').replace('loss','亏损').replace('weight', '权重').replace('recharge_point', '起充点')
@@ -229,7 +232,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                     writer = csv.writer(write_obj)
                     writer.writerow(
                         ["用户id", "游戏1", "平台1", "游戏2", "平台2", "游戏3", "平台3", "游戏4", "平台4", "游戏5", "平台5", "游戏6", "平台6",
-                         "游戏7", "平台7", "游戏8", "平台8", ])
+                         "游戏7", "平台7", "游戏8", "平台8"])
                     # 写入多行用writerows
                     csv_list = []
                     random.shuffle(results)
@@ -258,7 +261,9 @@ if __name__ == '__main__':
     xw_p = int(input("请输入享玩占比(0-100):"))
     dy_p = int(input("请输入多游占比(0-100):"))
     ibx_p = int(input("请输入爱变现占比(0-100):"))
+    recharge_p = float(input("请输入充值比例(1-0.01):"))
+    recharge_count_every_people = int(input("请输入每人最大分配充值游戏任务数(5-20):"))
     print("-----------------------------")
-    run(worker, people_count, game_count, dy_p, ibx_p, jxw_p, xw_p)
+    run(worker, people_count, game_count, dy_p, ibx_p, jxw_p, xw_p, recharge_p, recharge_count_every_people)
     print('导出文件目录为根目录下的results')
     input("输入任意键退出")
