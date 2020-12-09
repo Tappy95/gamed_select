@@ -19,3 +19,11 @@ class GameList(Base):
     loss = Column(Float(10))
     weight = Column(INTEGER(4))
     recharge_point = Column(INTEGER(5))
+
+
+class GameRechange(Base):
+    __tablename__ = 'game_rechange'
+
+    id = Column(INTEGER(9), primary_key=True)
+    update_time = Column(DateTime, primary_key=True)
+    games = Column(Text)

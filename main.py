@@ -1,3 +1,4 @@
+import copy
 import random
 import time
 
@@ -7,7 +8,7 @@ from sqlalchemy import create_engine, select, and_, update
 from sqlalchemy.dialects.mysql import insert
 import csv
 from config import *
-from models.bzly import GameList
+from models.bzly import GameList, GameRechange
 from utils.util import serialize
 import sys
 
@@ -118,6 +119,39 @@ class Caculate_games:
         }
         return platform_game_detail
 
+    # 处理前七天,前18个账号的去重操作
+    def rechange_gamelist(self, people_tasks):
+        # 查前七天的游戏
+        now = datetime.now()
+        with engine.connect() as conn:
+            select_before_games = conn.execute(select([GameRechange]).where(
+                and_(
+                    GameRechange.update_time >= now - timedelta(days=7) - timedelta(hours=now.hour, minutes=now.minute,
+                                                                                    seconds=now.second,
+                                                                                    microseconds=now.microsecond),
+                    GameRechange.update_time != now - timedelta(hours=now.hour, minutes=now.minute, seconds=now.second,
+                                                                microseconds=now.microsecond)
+                )
+            )).fetchall()
+            # 构建过滤器
+            all_rechange = {}
+            for item in select_before_games:
+                if item['id'] not in all_rechange:
+                    all_rechange[item['id']] = eval(item['games'])
+                else:
+                    all_rechange[item['id']].extend(eval(item['games']))
+
+            cache_list = ["-"]
+            while cache_list:
+                for exist_people in people_tasks:
+                    single_games = copy.deepcopy(exist_people['task'])
+                    for game in exist_people['task']:
+                        if exist_people['people_id'] in all_rechange:
+                            for done_game in all_rechange[exist_people['people_id']]:
+                                if game['name'] == done_game['name'] and game['platform'] == done_game['platform']:
+                                    cache_list.append()
+
+
     def add_task_to_people(self, people_tasks, all_games):
         all_games_count = {}
         is_deny = 1
@@ -210,6 +244,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
         )
         results, all_games_count, platform_games_count = c_game.gen_people_tasks()
         print(platform_games_count)
+
         with open('./results/games_count.csv', 'w') as count_obj:
             writer_count = csv.writer(count_obj)
             writer_count.writerow(["游戏", "平台", "总数", "充值数"])
@@ -228,6 +263,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                 # result = str(result).replace('name', '游戏名').replace('platform','平台').replace('recharge10_rebate', '充10返现').replace('loss','亏损').replace('weight', '权重').replace('recharge_point', '起充点')
                 result = str(result)
                 file_obj.write(result + '\n')
+
             for i in range(worker):
                 with open('./results/players_{}.csv'.format(i + 1), 'w') as write_obj:
                     writer = csv.writer(write_obj)
