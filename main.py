@@ -191,7 +191,8 @@ def write_csv():
                 writer.writerows(results)
 
 
-def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, xw_p=25, recharge_p=0.06,recharge_count_every_people=15):
+def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, xw_p=25, recharge_p=0.06,
+        recharge_count_every_people=15):
     with engine.connect() as conn:
         select_game_list = select([GameList])
         cur = conn.execute(select_game_list)
@@ -217,9 +218,9 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
             recharge_dict = {}
             for key, count in all_games_count.items():
                 list1 = key.split('-')
-                csv_list.append([list1[1], list1[0], count, int(count*recharge_p)])
-                recharge_dict[key] = int(count*recharge_p)
-            csv_list = sorted(csv_list, key=lambda k: k[1],reverse=False)
+                csv_list.append([list1[1], list1[0], count, int(count * recharge_p)])
+                recharge_dict[key] = int(count * recharge_p)
+            csv_list = sorted(csv_list, key=lambda k: k[1], reverse=False)
             writer_count.writerows(csv_list)
             print(recharge_dict)
         with open('./results/player_today.txt', 'w') as file_obj:
@@ -232,19 +233,29 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                     writer = csv.writer(write_obj)
                     writer.writerow(
                         ["用户id", "游戏1", "平台1", "游戏2", "平台2", "游戏3", "平台3", "游戏4", "平台4", "游戏5", "平台5", "游戏6", "平台6",
-                         "游戏7", "平台7", "游戏8", "平台8"])
+                         "游戏7", "平台7", "游戏8", "平台8", "充值1", "充值2", "充值3", "充值4"])
                     # 写入多行用writerows
                     csv_list = []
                     random.shuffle(results)
-                    for idx, p_info in enumerate(results[i * people_count:(i + 1) * people_count]):
+                    for idx, p_info in enumerate(results[i * people_count:(i + 1) * people_count], 1):
                         # csv_item = [p_info['people_id']]
-                        csv_item = [str(idx+1)]
+                        csv_item = [str(idx)]
+                        last_list = []
                         # print(p_info['task'])
                         random.shuffle(p_info['task'])
                         # print(p_info['task'])
+                        effect_games = len(p_info['task'])
                         for task in p_info['task']:
                             csv_item.append(task['name'])
                             csv_item.append(task['platform'])
+                            if task['platform'] + '-' + task['name'] in recharge_dict \
+                                    and recharge_dict[task['platform'] + '-' + task['name']]:
+                                last_list.append(task['platform'] + '-' + task['name'] + "充值一次")
+                                recharge_dict[task['platform'] + '-' + task['name']] -= 1
+                        for blank in range(8 - effect_games):
+                            csv_item.append('-')
+                            csv_item.append('-')
+                        csv_item.extend(last_list)
                         csv_list.append(csv_item)
 
                     writer.writerows(csv_list)
