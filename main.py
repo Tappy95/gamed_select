@@ -320,6 +320,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                 recharge_dict[key] = int(count * recharge_p)
             csv_list = sorted(csv_list, key=lambda k: k[1], reverse=False)
             writer_count.writerows(csv_list)
+            new_recharge = copy.deepcopy(recharge_dict)
             # print(recharge_dict)
         with open('./results/player_today.txt', 'w') as file_obj:
             for result in results:
@@ -356,8 +357,60 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                             csv_item.append('-')
                         csv_item.extend(last_list)
                         csv_list.append(csv_item)
-
                     writer.writerows(csv_list)
+        with open('./results/recharge_games.csv', 'w') as recharge_obj:
+            write_recharge = csv.writer(recharge_obj)
+            write_recharge.writerow([
+                "充值1",
+                "充值2",
+                "充值3",
+                "充值4",
+                "充值5",
+                "充值6",
+                "充值7",
+                "充值8"
+            ])
+            new_recharge_list = []
+            for item in new_recharge.keys():
+                if new_recharge[item] > 0:
+                    r_list = item.split('-')
+                    for count in range(new_recharge[item]):
+                        new_recharge_list.append(
+                            {
+                                "name": r_list[1],
+                                "platform": r_list[0]
+                            }
+                        )
+            new_r_list = [{"id": i + 1, "task": []} for i in range(int(len(new_recharge_list) / people_games) + 2)]
+            while new_recharge_list:
+                print("分配充值任务:{}".format(len(new_recharge_list)))
+                the_game = new_recharge_list.pop(0)
+                is_add=0
+                for user in new_r_list:
+                    is_same = 0
+                    for task in user['task']:
+                        if task['name'] == the_game['name']:
+                            is_same = 1
+                            break
+                    if not is_same:
+                        if len(user['task']) < people_games:
+                            user['task'].append(the_game)
+                            is_add = 1
+                            break
+                if not is_add:
+                    new_recharge_list.append(the_game)
+            results = []
+            # print(new_r_list)
+            for user in new_r_list:
+                a_list = []
+                # print(user['task'])
+                for task in user['task']:
+                    a_list.append(task['platform'] + task['name'])
+                random.shuffle(a_list)
+                results.append(a_list)
+            # print(results)
+            write_recharge.writerows(results)
+
 
         # write_csv()
 
@@ -372,8 +425,8 @@ if __name__ == '__main__':
     dy_p = int(input("请输入多游占比(0-100):"))
     ibx_p = int(input("请输入爱变现占比(0-100):"))
     recharge_p = float(input("请输入充值比例(1-0.01):"))
-    recharge_count_every_people = int(input("请输入每人最大分配充值游戏任务数(5-20):"))
+    # recharge_count_every_people = int(input("请输入每人最大分配充值游戏任务数(5-20):"))
     print("-----------------------------")
-    run(worker, people_count, game_count, dy_p, ibx_p, jxw_p, xw_p, recharge_p, recharge_count_every_people)
+    run(worker, people_count, game_count, dy_p, ibx_p, jxw_p, xw_p, recharge_p)
     print('导出文件目录为根目录下的results')
     input("输入任意键退出")
