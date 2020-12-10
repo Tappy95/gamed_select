@@ -141,16 +141,77 @@ class Caculate_games:
                 else:
                     all_rechange[item['id']].extend(eval(item['games']))
 
-            cache_list = ["-"]
-            while cache_list:
-                for exist_people in people_tasks:
-                    single_games = copy.deepcopy(exist_people['task'])
-                    for game in exist_people['task']:
-                        if exist_people['people_id'] in all_rechange:
-                            for done_game in all_rechange[exist_people['people_id']]:
-                                if game['name'] == done_game['name'] and game['platform'] == done_game['platform']:
-                                    cache_list.append()
+            new_tasks = copy.deepcopy(people_tasks)
+            all_games = []
+            for idx, exist_people in enumerate(people_tasks):
+                cache_list = []
+                # print("处理前账号任务数:{}".format(len(exist_people['task'])))
+                for game in exist_people['task']:
+                    if exist_people['people_id'] in all_rechange:
+                        is_repeat = 0
+                        for done_game in all_rechange[exist_people['people_id']]:
+                            if game['name'] != done_game['name'] and game['platform'] != done_game['platform']:
+                                is_repeat = 1
+                    if is_repeat:
+                        all_games.append(game)
+                    else:
+                        cache_list.append(game)
+                new_tasks[idx]['task'] = cache_list
+            print("重置游戏数-----------------------------".format(len(all_games)))
 
+            all_games_count = {}
+            is_deny = 1
+            same_counts = 0
+            last_counts = 0
+            while all_games:
+                if last_counts == len(all_games):
+                    same_counts += 1
+                if same_counts >= 5 and is_deny:
+                    is_deny = 0
+                    print("----------打开平台限制")
+                last_counts = len(all_games)
+                if len(all_games) <= 2 and not is_deny:
+                    return new_tasks, all_games_count
+                print("重分配任务数:{}".format(len(all_games)))
+                random.shuffle(all_games)
+                the_game = all_games.pop(0)
+                is_add = 0
+                for the_people in new_tasks:
+                    # print("当前账号任务数:{}".format(len(the_people['task'])))
+                    is_not_the_people = 0
+                    if the_people['people_id'] in all_rechange:
+                        # print(the_game)
+                        # print(the_people['people_id'], all_rechange[the_people['people_id']])
+                        for done_game in all_rechange[the_people['people_id']]:
+                            if the_game['name'] == done_game['name']:
+                                is_not_the_people = 1
+                                # print("游戏重复")
+                                break
+                    if is_not_the_people:
+                        continue
+
+                    if len(the_people['task']) >= self.people_games:
+                        # print('任务已满')
+                        continue
+                    for its_game in the_people['task']:
+                        if its_game['platform_id'] == the_game['platform_id'] and is_deny:
+                            break
+                        if its_game['name'] == the_game['name']:
+                            break
+                    else:
+                        the_people['task'].append(the_game)
+                        is_add = 1
+                        break
+                if is_add == 0:
+                    all_games.append(the_game)
+                else:
+                    # print("加入成功")
+                    the_key = the_game['platform'] + '-' + the_game['name']
+                    if the_key in all_games_count:
+                        all_games_count[the_key] += 1
+                    else:
+                        all_games_count[the_key] = 1
+        return new_tasks, all_games_count
 
     def add_task_to_people(self, people_tasks, all_games):
         all_games_count = {}
@@ -165,8 +226,9 @@ class Caculate_games:
                 print("----------打开平台限制")
             last_counts = len(all_games)
             if len(all_games) <= 2 and not is_deny:
+                people_tasks, all_games_count = self.rechange_gamelist(people_tasks)
                 return people_tasks, all_games_count, self.platform_games_count
-            print(len(all_games))
+            print("待分配任务数:{}".format(len(all_games)))
             random.shuffle(all_games)
             the_game = all_games.pop(0)
             is_add = 0
@@ -191,6 +253,7 @@ class Caculate_games:
                     all_games_count[the_key] += 1
                 else:
                     all_games_count[the_key] = 1
+        people_tasks, all_games_count = self.rechange_gamelist(people_tasks)
         return people_tasks, all_games_count, self.platform_games_count
 
     def gen_people_tasks(self):
@@ -243,7 +306,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
             xw_p=xw_p
         )
         results, all_games_count, platform_games_count = c_game.gen_people_tasks()
-        print(platform_games_count)
+        # print(platform_games_count)
 
         with open('./results/games_count.csv', 'w') as count_obj:
             writer_count = csv.writer(count_obj)
@@ -257,7 +320,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                 recharge_dict[key] = int(count * recharge_p)
             csv_list = sorted(csv_list, key=lambda k: k[1], reverse=False)
             writer_count.writerows(csv_list)
-            print(recharge_dict)
+            # print(recharge_dict)
         with open('./results/player_today.txt', 'w') as file_obj:
             for result in results:
                 # result = str(result).replace('name', '游戏名').replace('platform','平台').replace('recharge10_rebate', '充10返现').replace('loss','亏损').replace('weight', '权重').replace('recharge_point', '起充点')

@@ -35,6 +35,7 @@ def read_csv_save_rechange():
             result = eval(item)
             result['games'] = str(result.pop('task'))
             result['id'] = result.pop('people_id')
+            # result['update_time'] = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
             result['update_time'] = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
             results.append(result)
 
@@ -77,5 +78,5 @@ def test_time_filter():
 
 
 if __name__ == '__main__':
-    # read_csv_save_rechange()
-    test_time_filter()
+    read_csv_save_rechange()
+    # test_time_filter()
