@@ -24,8 +24,6 @@ engine = create_engine(
 
 
 def read_csv_save_rechange():
-    results = []
-
     with open("./results/player_today.txt", "r") as reader:
         reader = reader.readlines()
 

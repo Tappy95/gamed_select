@@ -339,7 +339,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                     random.shuffle(results)
                     for idx, p_info in enumerate(results[i * people_count:(i + 1) * people_count], 1):
                         # csv_item = [p_info['people_id']]
-                        csv_item = [str(idx)]
+                        csv_item = [p_info['people_id']]
                         last_list = []
                         # print(p_info['task'])
                         random.shuffle(p_info['task'])
@@ -361,14 +361,14 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
         with open('./results/recharge_games.csv', 'w') as recharge_obj:
             write_recharge = csv.writer(recharge_obj)
             write_recharge.writerow([
-                "充值1",
-                "充值2",
-                "充值3",
-                "充值4",
-                "充值5",
-                "充值6",
-                "充值7",
-                "充值8"
+                "游戏1",
+                "平台1",
+                "游戏2",
+                "平台2",
+                "游戏3",
+                "平台3",
+                "游戏4",
+                "平台5",
             ])
             new_recharge_list = []
             for item in new_recharge.keys():
@@ -381,11 +381,11 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                                 "platform": r_list[0]
                             }
                         )
-            new_r_list = [{"id": i + 1, "task": []} for i in range(int(len(new_recharge_list) / people_games) + 2)]
+            new_r_list = [{"id": i + 1, "task": []} for i in range(int(len(new_recharge_list) / 4) + 2)]
             while new_recharge_list:
                 print("分配充值任务:{}".format(len(new_recharge_list)))
                 the_game = new_recharge_list.pop(0)
-                is_add=0
+                is_add = 0
                 for user in new_r_list:
                     is_same = 0
                     for task in user['task']:
@@ -393,7 +393,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                             is_same = 1
                             break
                     if not is_same:
-                        if len(user['task']) < people_games:
+                        if len(user['task']) < 4:
                             user['task'].append(the_game)
                             is_add = 1
                             break
