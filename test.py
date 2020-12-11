@@ -75,6 +75,38 @@ def test_time_filter():
         print(select_before_games)
 
 
+def read_day_csv():
+    with open('./results/players_3.csv', 'r') as csv_obj:
+        reader = csv.reader(csv_obj)
+        results = []
+        for idx, row in enumerate(reader):
+            if not row[0]:
+                break
+            if idx >= 1:
+                result = {}
+                result['id'] = row.pop(0)
+                the_list = [row[i:i + 2] for i in range(0, len(row), 2)]
+                games = []
+                for i in the_list:
+                    if not i[0]:
+                        break
+                    games.append({"name": i[0], "platform": i[1]})
+                result['games'] = str(games)
+                # result['update_time'] = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+                result['update_time'] = datetime.now().strftime("%Y-%m-%d")
+                results.append(result)
+        print(results)
+        with engine.connect() as conn:
+            insert_stmt = insert(GameRechange)
+            on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(
+                id=insert_stmt.inserted.id,
+                games=insert_stmt.inserted.games,
+                update_time=insert_stmt.inserted.update_time
+            )
+            conn.execute(on_duplicate_key_stmt, results)
+
+
 if __name__ == '__main__':
-    read_csv_save_rechange()
+    # read_csv_save_rechange()
     # test_time_filter()
+    read_day_csv()

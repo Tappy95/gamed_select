@@ -170,9 +170,9 @@ class Caculate_games:
                     is_deny = 0
                     print("----------打开平台限制")
                 last_counts = len(all_games)
-                if len(all_games) <= 2 and not is_deny:
+                if len(all_games) <= 3 and not is_deny:
                     return new_tasks, all_games_count
-                print("重分配任务数:{}".format(len(all_games)))
+                print("重分配任务数-------------------------:{}".format(len(all_games)))
                 random.shuffle(all_games)
                 the_game = all_games.pop(0)
                 is_add = 0
@@ -185,13 +185,13 @@ class Caculate_games:
                         for done_game in all_rechange[the_people['people_id']]:
                             if the_game['name'] == done_game['name']:
                                 is_not_the_people = 1
-                                # print("游戏重复")
+                                print("游戏重复")
                                 break
                     if is_not_the_people:
                         continue
 
                     if len(the_people['task']) >= self.people_games:
-                        # print('任务已满')
+                        print('任务已满')
                         continue
                     for its_game in the_people['task']:
                         if its_game['platform_id'] == the_game['platform_id'] and is_deny:
@@ -218,14 +218,16 @@ class Caculate_games:
         is_deny = 1
         same_counts = 0
         last_counts = 0
+        random.shuffle(all_games)
         while all_games:
             if last_counts == len(all_games):
                 same_counts += 1
-            if same_counts >= 5 and is_deny:
-                is_deny = 0
+                # if same_counts >= 5 and is_deny:
+                #     is_deny = 0
                 print("----------打开平台限制")
             last_counts = len(all_games)
-            if len(all_games) <= 2 and not is_deny:
+            # if len(all_games) <= 2 and not is_deny:
+            if len(all_games) <= 2:
                 people_tasks, all_games_count = self.rechange_gamelist(people_tasks)
                 return people_tasks, all_games_count, self.platform_games_count
             print("待分配任务数:{}".format(len(all_games)))
@@ -236,8 +238,8 @@ class Caculate_games:
                 if len(the_people['task']) >= self.people_games:
                     continue
                 for its_game in the_people['task']:
-                    if its_game['platform_id'] == the_game['platform_id'] and is_deny:
-                        break
+                    # if its_game['platform_id'] == the_game['platform_id'] and is_deny:
+                    #     break
                     if its_game['name'] == the_game['name']:
                         break
                 else:
@@ -258,7 +260,7 @@ class Caculate_games:
 
     def gen_people_tasks(self):
         people_task = []
-        for i in range(self.people_count * self.worker):
+        for i in range(self.people_count * self.worker+1):
             task = {
                 "people_id": i + 1,
                 "task": []
@@ -288,8 +290,7 @@ def write_csv():
                 writer.writerows(results)
 
 
-def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, xw_p=25, recharge_p=0.06,
-        recharge_count_every_people=15):
+def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, xw_p=25, recharge_p=0.06):
     with engine.connect() as conn:
         select_game_list = select([GameList])
         cur = conn.execute(select_game_list)
@@ -306,6 +307,8 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
             xw_p=xw_p
         )
         results, all_games_count, platform_games_count = c_game.gen_people_tasks()
+        # print(results[-2:])
+        save_db_today(copy.deepcopy(results))
         # print(platform_games_count)
 
         with open('./results/games_count.csv', 'w') as count_obj:
@@ -336,7 +339,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                          "游戏7", "平台7", "游戏8", "平台8", "充值1", "充值2", "充值3", "充值4"])
                     # 写入多行用writerows
                     csv_list = []
-                    random.shuffle(results)
+                    # random.shuffle(results)
                     for idx, p_info in enumerate(results[i * people_count:(i + 1) * people_count], 1):
                         # csv_item = [p_info['people_id']]
                         csv_item = [p_info['people_id']]
@@ -405,14 +408,34 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                 a_list = []
                 # print(user['task'])
                 for task in user['task']:
-                    a_list.append(task['platform'] + task['name'])
+                    a_list.append(task['name'])
+                    a_list.append(task['platform'])
                 random.shuffle(a_list)
                 results.append(a_list)
             # print(results)
             write_recharge.writerows(results)
 
-
         # write_csv()
+
+
+def save_db_today(results):
+    save_list = []
+    for result in results:
+        # result = eval(item)
+        result['games'] = str(result.pop('task'))
+        result['id'] = result.pop('people_id')
+        # result['update_time'] = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        result['update_time'] = datetime.now().strftime("%Y-%m-%d")
+        save_list.append(result)
+
+    with engine.connect() as conn:
+        insert_stmt = insert(GameRechange)
+        on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(
+            id=insert_stmt.inserted.id,
+            games=insert_stmt.inserted.games,
+            update_time=insert_stmt.inserted.update_time
+        )
+        conn.execute(on_duplicate_key_stmt, save_list)
 
 
 if __name__ == '__main__':
