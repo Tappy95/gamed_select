@@ -163,6 +163,7 @@ class Caculate_games:
             is_deny = 1
             same_counts = 0
             last_counts = 0
+            is_same_count = 0
             while all_games:
                 if last_counts == len(all_games):
                     same_counts += 1
@@ -176,6 +177,7 @@ class Caculate_games:
                 random.shuffle(all_games)
                 the_game = all_games.pop(0)
                 is_add = 0
+
                 for the_people in new_tasks:
                     # print("当前账号任务数:{}".format(len(the_people['task'])))
                     is_not_the_people = 0
@@ -183,11 +185,15 @@ class Caculate_games:
                         # print(the_game)
                         # print(the_people['people_id'], all_rechange[the_people['people_id']])
                         for done_game in all_rechange[the_people['people_id']]:
+
                             if the_game['name'] == done_game['name']:
                                 is_not_the_people = 1
                                 print("游戏重复")
-                                break
-                    if is_not_the_people:
+                                is_same_count += 1
+                                print("current_pag:{}".format(is_same_count))
+                                if is_same_count < 300:
+                                    break
+                    if is_not_the_people and is_same_count < 300:
                         continue
 
                     if len(the_people['task']) >= self.people_games:
@@ -364,6 +370,7 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
         with open('./results/recharge_games.csv', 'w') as recharge_obj:
             write_recharge = csv.writer(recharge_obj)
             write_recharge.writerow([
+                "ID",
                 "游戏1",
                 "平台1",
                 "游戏2",
@@ -404,13 +411,13 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
                     new_recharge_list.append(the_game)
             results = []
             # print(new_r_list)
-            for user in new_r_list:
-                a_list = []
+            for idx, user in enumerate(new_r_list, 1):
+                a_list = [str(idx)]
                 # print(user['task'])
                 for task in user['task']:
                     a_list.append(task['name'])
                     a_list.append(task['platform'])
-                random.shuffle(a_list)
+                # random.shuffle(a_list)
                 results.append(a_list)
             # print(results)
             write_recharge.writerows(results)
