@@ -19,6 +19,8 @@ class GameList(Base):
     loss = Column(Float(10))
     weight = Column(INTEGER(4))
     recharge_point = Column(INTEGER(5))
+    play_count = Column(INTEGER(11))
+    recharge_count = Column(INTEGER(11))
 
 
 class GameRechange(Base):

@@ -296,6 +296,8 @@ def write_csv():
                 writer.writerows(results)
 
 
+
+
 def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, xw_p=25, recharge_p=0.06):
     with engine.connect() as conn:
         select_game_list = select([GameList])
@@ -323,10 +325,24 @@ def run(worker=1, people_count=60, people_games=4, dy_p=25, ibx_p=25, jxw_p=25, 
             # 写入多行用writerows
             csv_list = []
             recharge_dict = {}
+            current_dict = {}
+            select_recharge_count = conn.execute(select([GameList])).fetchall()
+            for game in select_recharge_count:
+                current_dict[game['name'] + game['platform']] = [game['play_count'] if game['play_count'] else 0, game['recharge_count'] if game['recharge_count'] else 0]
             for key, count in all_games_count.items():
+                # 今日充值数
                 list1 = key.split('-')
-                csv_list.append([list1[1], list1[0], count, int(count * recharge_p)])
-                recharge_dict[key] = int(count * recharge_p)
+
+                # 计算今日充值,补充所欠
+                should_recharge = int(current_dict[list1[1]+list1[0]][0] * recharge_p)
+                if should_recharge - current_dict[list1[1]+list1[0]][1] > 0:
+                    before_should_recharge = should_recharge - current_dict[list1[1]+list1[0]][1]
+                today_recharge = before_should_recharge + int(count * recharge_p)
+
+
+                csv_list.append([list1[1], list1[0], count, today_recharge])
+
+                recharge_dict[key] = today_recharge
             csv_list = sorted(csv_list, key=lambda k: k[1], reverse=False)
             writer_count.writerows(csv_list)
             new_recharge = copy.deepcopy(recharge_dict)

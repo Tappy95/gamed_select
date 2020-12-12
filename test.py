@@ -92,8 +92,8 @@ def read_day_csv():
                         break
                     games.append({"name": i[0], "platform": i[1]})
                 result['games'] = str(games)
-                # result['update_time'] = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-                result['update_time'] = datetime.now().strftime("%Y-%m-%d")
+                result['update_time'] = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+                # result['update_time'] = datetime.now().strftime("%Y-%m-%d")
                 results.append(result)
         print(results)
         with engine.connect() as conn:
@@ -106,7 +106,34 @@ def read_day_csv():
             conn.execute(on_duplicate_key_stmt, results)
 
 
+def read_sql_count():
+    count = {}
+    with engine.connect() as conn:
+        select_all_record = conn.execute(select([GameRechange])).fetchall()
+        for row in select_all_record:
+            items = eval(row['games'])
+            for item in items:
+                key = item['name'] + '-' + item['platform']
+                if key in count:
+                    count[key] += 1
+                else:
+                    count[key] = 1
+        print(count)
+        for k, v in count.items():
+            a = k.split('-')
+            print(a)
+            conn.execute(update(GameList).values({
+                "play_count": int(v)
+            }).where(
+                and_(
+                    GameList.name == a[0],
+                    GameList.platform == a[1],
+                )
+            ))
+
+
 if __name__ == '__main__':
     # read_csv_save_rechange()
     # test_time_filter()
-    read_day_csv()
+    # read_day_csv()
+    read_sql_count()
